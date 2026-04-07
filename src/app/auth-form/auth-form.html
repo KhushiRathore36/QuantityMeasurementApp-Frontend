@@ -1,0 +1,43 @@
+<div class="auth-wrapper">
+
+  <div class="auth-card">
+
+    <h2>Login Form</h2>
+
+    <!-- Tabs -->
+    <div class="tab-buttons">
+      <button [class.active]="isLogin" (click)="isLogin=true">Login</button>
+      <button [class.active]="!isLogin" (click)="isLogin=false">Signup</button>
+    </div>
+
+    <!-- LOGIN -->
+    <form *ngIf="isLogin">
+      <input type="text" placeholder="Username" required />
+      <input type="password" placeholder="Password" required />
+
+      <p class="forgot">Forgot password?</p>
+
+      <button class="primary-btn">Login</button>
+
+      <p class="switch-text">
+        Not a member?
+        <span (click)="isLogin=false">Signup now</span>
+      </p>
+    </form>
+
+    <!-- SIGNUP -->
+    <form *ngIf="!isLogin">
+      <input type="text" placeholder="Username" required />
+      <input type="password" placeholder="Password" required />
+
+      <button class="primary-btn">Signup</button>
+
+      <p class="switch-text">
+        Already have account?
+        <span (click)="isLogin=true">Login</span>
+      </p>
+    </form>
+
+  </div>
+
+</div>

@@ -1,0 +1,96 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* BACKGROUND */
+.auth-wrapper {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(to right, #005bea, #00c6fb);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* CARD */
+.auth-card {
+  width: 350px;
+  background: white;
+  padding: 30px 25px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.auth-card h2 {
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* TABS */
+.tab-buttons {
+  display: flex;
+  background: #f1f1f1;
+  border-radius: 25px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.tab-buttons button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tab-buttons button.active {
+  background: linear-gradient(to right, #005bea, #00c6fb);
+  color: white;
+  border-radius: 25px;
+}
+
+/* INPUTS */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  outline: none;
+}
+
+/* FORGOT */
+.forgot {
+  font-size: 12px;
+  text-align: left;
+  margin-bottom: 15px;
+  color: #007bff;
+  cursor: pointer;
+}
+
+/* BUTTON */
+.primary-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(to right, #005bea, #00c6fb);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* SWITCH TEXT */
+.switch-text {
+  font-size: 12px;
+  margin-top: 15px;
+}
+
+.switch-text span {
+  color: #007bff;
+  cursor: pointer;
+}
