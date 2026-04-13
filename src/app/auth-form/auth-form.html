@@ -11,31 +11,18 @@
     </div>
 
     <!-- LOGIN -->
-    <form *ngIf="isLogin">
-      <input type="text" placeholder="Username" required />
-      <input type="password" placeholder="Password" required />
-
-      <p class="forgot">Forgot password?</p>
+    <form *ngIf="isLogin" (ngSubmit)="handleLogin()">
+      <input type="text" [(ngModel)]="username" name="username" placeholder="Username" required />
+      <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required />
 
       <button class="primary-btn">Login</button>
-
-      <p class="switch-text">
-        Not a member?
-        <span (click)="isLogin=false">Signup now</span>
-      </p>
     </form>
 
-    <!-- SIGNUP -->
-    <form *ngIf="!isLogin">
-      <input type="text" placeholder="Username" required />
-      <input type="password" placeholder="Password" required />
+    <form *ngIf="!isLogin" (ngSubmit)="handleSignup()">
+      <input type="text" [(ngModel)]="username" name="username" placeholder="Username" required />
+      <input type="password" [(ngModel)]="password" name="password" placeholder="Password" required />
 
       <button class="primary-btn">Signup</button>
-
-      <p class="switch-text">
-        Already have account?
-        <span (click)="isLogin=true">Login</span>
-      </p>
     </form>
 
   </div>

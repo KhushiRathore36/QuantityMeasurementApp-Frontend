@@ -3,6 +3,9 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 // import { AuthFormComponent } from '../../auth-form/auth-form';
+import { AuthService } from '../../services/auth.service';
+import {QuantityService} from "../../services/quantity.service";
+
 type QuantityType = 'length' | 'weight' | 'volume' | 'temperature';
 type OperationType =
   | 'convert'
@@ -57,10 +60,14 @@ export class HomeComponent {
     temperature: ['convert', 'compare']
   };
 
-  constructor(private router: Router) {
+   constructor(
+     private router: Router,
+     private auth: AuthService,
+     private quantityService: QuantityService
+   ) {
     this.resetUnitsForType();
     this.calculate();
-  }
+   }
 
   selectType(type: QuantityType): void {
     this.selectedType = type;
@@ -168,8 +175,27 @@ export class HomeComponent {
   }
 
   performAction(): void {
-    this.calculate();
-    this.saveToHistory();
+
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const requestBody = this.buildRequestBody();
+
+    const apiUrl = this.quantityService.getApiByOperation(this.selectedOperation);
+
+    this.quantityService.postData(apiUrl, requestBody)
+      .subscribe((res: any) => {
+
+      if (this.selectedOperation === 'compare') {
+        this.resultText = res.resultString;
+      } else {
+        this.resultText = `${res.resultValue} ${res.resultUnit}`;
+      }
+
+      this.saveToHistory();
+    });
   }
 
   saveToHistory(): void {
@@ -297,10 +323,38 @@ export class HomeComponent {
   }
 
   goToHistory(): void {
+
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
     this.router.navigate(['/history']);
   }
 
   logout(): void {
+    this.auth.logout();
     this.router.navigate(['/login']);
+  }
+  buildRequestBody() {
+    const typeMap: any = {
+      length: 'LengthUnit',
+      weight: 'WeightUnit',
+      volume: 'VolumeUnit',
+      temperature: 'TemperatureUnit'
+    };
+
+    return {
+      thisQuantityDTO: {
+        value: this.firstValue,
+        unit: this.firstUnit.toUpperCase(),
+        measurementType: typeMap[this.selectedType]
+      },
+      thatQuantityDTO: {
+        value: this.secondValue,
+        unit: this.secondUnit.toUpperCase(),
+        measurementType: typeMap[this.selectedType]
+      }
+    };
   }
 }
