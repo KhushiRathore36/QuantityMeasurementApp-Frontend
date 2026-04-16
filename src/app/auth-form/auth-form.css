@@ -63,15 +63,6 @@ input {
   outline: none;
 }
 
-/* FORGOT */
-.forgot {
-  font-size: 12px;
-  text-align: left;
-  margin-bottom: 15px;
-  color: #007bff;
-  cursor: pointer;
-}
-
 /* BUTTON */
 .primary-btn {
   width: 100%;
@@ -84,13 +75,32 @@ input {
   cursor: pointer;
 }
 
-/* SWITCH TEXT */
-.switch-text {
+/* DIVIDER */
+.divider {
+  margin: 15px 0;
   font-size: 12px;
-  margin-top: 15px;
+  color: #888;
 }
 
-.switch-text span {
-  color: #007bff;
+/* GOOGLE BUTTON */
+.google-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 25px;
+  border: 1px solid #ddd;
+  background: white;
   cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.google-btn:hover {
+  background: #f5f5f5;
+}
+
+.google-icon {
+  width: 18px;
 }

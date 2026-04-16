@@ -19,22 +19,34 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}/login`, data);
   }
 
-  // ✅ TOKEN STORE
+  // TOKEN STORE
   saveToken(token: string): void {
     localStorage.setItem('token', token);
   }
 
-  // ✅ TOKEN GET
+  // TOKEN GET
   getToken(): string | null {
     return localStorage.getItem('token');
   }
+  getUser() {
+    const token = localStorage.getItem('token');
 
-  // ✅ LOGIN CHECK
+    if (!token) return null;
+
+  // JWT decode (basic)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || payload.email || payload.username;
+    } catch (e) {
+      return null;
+    }
+  }
+  // LOGIN CHECK
   isLoggedIn(): boolean {
     return !!this.getToken();
   }
 
-  // ✅ LOGOUT
+  // LOGOUT
   logout(): void {
     localStorage.removeItem('token');
   }

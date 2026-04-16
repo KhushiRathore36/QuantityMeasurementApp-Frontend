@@ -14,6 +14,10 @@
     </div>
 
     <div class="topbar-actions">
+      <div class="user-info" *ngIf="userName">
+        <div class="user-icon">{{ userName.charAt(0).toUpperCase() }}</div>
+        <span class="user-name">{{ userName }}</span>
+      </div>
       <button class="ghost-btn" (click)="goToHistory()">History</button>
       <button class="logout-btn" (click)="logout()">Logout</button>
     </div>
@@ -29,20 +33,14 @@
           unit categories with a clean modern experience.
         </p>
       </div>
-
       <div class="hero-right">
-        <div class="stat-card">
-          <span>Categories</span>
-          <strong>4</strong>
-        </div>
-        <div class="stat-card">
-          <span>Operations</span>
-          <strong>6</strong>
-        </div>
+        <div class="stat-card"><span>Categories</span><strong>4</strong></div>
+        <div class="stat-card"><span>Operations</span><strong>6</strong></div>
       </div>
     </section>
 
     <section class="workspace">
+      <!-- LEFT PANEL: Type + Operation -->
       <div class="panel left-panel">
         <div class="panel-header">
           <h3>Choose Type</h3>
@@ -50,52 +48,21 @@
         </div>
 
         <div class="type-grid">
-          <div
-            class="type-card"
-            [class.active]="selectedType === 'length'"
-            (click)="selectType('length')"
-          >
+          <div class="type-card" [class.active]="selectedType === 'length'" (click)="selectType('length')">
             <div class="type-icon">📏</div>
-            <div class="type-content">
-              <h4>Length</h4>
-              <span>Distance & size</span>
-            </div>
+            <div class="type-content"><h4>Length</h4><span>Distance & size</span></div>
           </div>
-
-          <div
-            class="type-card"
-            [class.active]="selectedType === 'temperature'"
-            (click)="selectType('temperature')"
-          >
+          <div class="type-card" [class.active]="selectedType === 'temperature'" (click)="selectType('temperature')">
             <div class="type-icon">🌡️</div>
-            <div class="type-content">
-              <h4>Temperature</h4>
-              <span>Heat values</span>
-            </div>
+            <div class="type-content"><h4>Temperature</h4><span>Heat values</span></div>
           </div>
-
-          <div
-            class="type-card"
-            [class.active]="selectedType === 'volume'"
-            (click)="selectType('volume')"
-          >
+          <div class="type-card" [class.active]="selectedType === 'volume'" (click)="selectType('volume')">
             <div class="type-icon">🧪</div>
-            <div class="type-content">
-              <h4>Volume</h4>
-              <span>Liquid measure</span>
-            </div>
+            <div class="type-content"><h4>Volume</h4><span>Liquid measure</span></div>
           </div>
-
-          <div
-            class="type-card"
-            [class.active]="selectedType === 'weight'"
-            (click)="selectType('weight')"
-          >
+          <div class="type-card" [class.active]="selectedType === 'weight'" (click)="selectType('weight')">
             <div class="type-icon">⚖️</div>
-            <div class="type-content">
-              <h4>Weight</h4>
-              <span>Mass values</span>
-            </div>
+            <div class="type-content"><h4>Weight</h4><span>Mass values</span></div>
           </div>
         </div>
 
@@ -106,12 +73,9 @@
               <ng-container *ngIf="selectedType !== 'temperature'; else tempOnly">
                 Convert, compare and calculate
               </ng-container>
-              <ng-template #tempOnly>
-                Temperature supports only convert and compare
-              </ng-template>
+              <ng-template #tempOnly>Temperature supports only convert and compare</ng-template>
             </p>
           </div>
-
           <div class="operation-grid">
             <button
               *ngFor="let operation of operationMap[selectedType]"
@@ -125,6 +89,7 @@
         </div>
       </div>
 
+      <!-- RIGHT PANEL: Calculator -->
       <div class="panel right-panel">
         <div class="panel-header">
           <h3>Calculator</h3>
@@ -132,41 +97,59 @@
         </div>
 
         <div class="calc-grid">
+          <!-- First Input: hamesha value + unit -->
           <div class="input-card">
             <label>From</label>
             <input
               type="number"
               [(ngModel)]="firstValue"
-              (input)="onInputChange()"
               placeholder="Enter value"
             />
-            <select [(ngModel)]="firstUnit" (change)="onInputChange()">
+            <select [(ngModel)]="firstUnit">
               <option *ngFor="let unit of unitMap[selectedType]" [value]="unit">
                 {{ unit | titlecase }}
               </option>
             </select>
           </div>
 
+          <!-- Second Input: Convert mode mein sirf unit, baaki mein value + unit -->
           <div class="input-card">
-            <label>{{ selectedOperation === 'convert' ? 'To' : 'With' }}</label>
-            <input
-              type="number"
-              [(ngModel)]="secondValue"
-              (input)="onInputChange()"
-              placeholder="Enter value"
-              [readonly]="selectedOperation === 'convert'"
-            />
-            <select [(ngModel)]="secondUnit" (change)="onInputChange()">
-              <option *ngFor="let unit of unitMap[selectedType]" [value]="unit">
-                {{ unit | titlecase }}
-              </option>
-            </select>
+            <label>{{ isConvertMode ? 'To Unit' : 'With' }}</label>
+
+            <!-- Convert: sirf unit dropdown, value input nahi -->
+            <ng-container *ngIf="isConvertMode">
+              <div class="convert-unit-only">
+                <select [(ngModel)]="secondUnit">
+                  <option *ngFor="let unit of unitMap[selectedType]" [value]="unit">
+                    {{ unit | titlecase }}
+                  </option>
+                </select>
+              </div>
+            </ng-container>
+
+            <!-- Other operations: value + unit dono -->
+            <ng-container *ngIf="!isConvertMode">
+              <input
+                type="number"
+                [(ngModel)]="secondValue"
+                placeholder="Enter value"
+              />
+              <select [(ngModel)]="secondUnit">
+                <option *ngFor="let unit of unitMap[selectedType]" [value]="unit">
+                  {{ unit | titlecase }}
+                </option>
+              </select>
+            </ng-container>
           </div>
         </div>
 
-        <button class="action-btn" (click)="performAction()">Calculate</button>
+        <!-- Calculate Button -->
+        <button class="action-btn" (click)="performAction()" [disabled]="isLoading">
+          {{ isLoading ? 'Calculating...' : 'Calculate' }}
+        </button>
 
-        <div class="result-box">
+        <!-- Result: sirf tab dikhaye jab resultText ho -->
+        <div class="result-box" *ngIf="resultText">
           <div class="result-top">
             <p class="result-label">Output</p>
             <span class="result-dot"></span>

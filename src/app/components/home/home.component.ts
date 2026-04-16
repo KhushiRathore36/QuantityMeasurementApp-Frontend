@@ -1,31 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-// import { AuthFormComponent } from '../../auth-form/auth-form';
 import { AuthService } from '../../services/auth.service';
-import {QuantityService} from "../../services/quantity.service";
+import { QuantityService } from '../../services/quantity.service';
+import { ChangeDetectorRef } from '@angular/core';
 
 type QuantityType = 'length' | 'weight' | 'volume' | 'temperature';
-type OperationType =
-  | 'convert'
-  | 'compare'
-  | 'add'
-  | 'subtract'
-  | 'multiply'
-  | 'divide';
-
-interface HistoryItem {
-  id: number;
-  type: QuantityType;
-  operation: OperationType;
-  firstValue: number;
-  firstUnit: string;
-  secondValue: number;
-  secondUnit: string;
-  resultText: string;
-  createdAt: string;
-}
+type OperationType = 'convert' | 'compare' | 'add' | 'subtract' | 'multiply' | 'divide';
 
 @Component({
   selector: 'app-home',
@@ -34,23 +16,28 @@ interface HistoryItem {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
+
+  userName: string | null = null;
+
   selectedType: QuantityType = 'length';
   selectedOperation: OperationType = 'convert';
 
-  firstValue = 1;
-  secondValue = 100;
+  firstValue: number = 1;
+  secondValue: number = 1;
 
-  firstUnit = 'metres';
-  secondUnit = 'centimetres';
+  // ✅ FIX 1: firstUnit/secondUnit ab unitMap se match karte hain (UPPERCASE)
+  firstUnit = 'METERS';
+  secondUnit = 'CENTIMETERS';
 
-  resultText = '1 Metres = 100 Centimetres';
+  resultText: string = '';
+  isLoading: boolean = false;
 
   unitMap: Record<QuantityType, string[]> = {
-    length: ['metres', 'centimetres', 'millimetres', 'kilometres', 'inches', 'feet', 'yards'],
-    weight: ['grams', 'kilograms', 'milligrams', 'pounds'],
-    volume: ['litres', 'millilitres', 'gallons'],
-    temperature: ['celsius', 'fahrenheit', 'kelvin']
+    length: ['METERS', 'CENTIMETERS', 'MILLIMETERS', 'KILOMETERS', 'INCHES', 'FEET', 'YARDS'],
+    weight: ['GRAMS', 'KILOGRAMS', 'MILLIGRAMS', 'POUNDS'],
+    volume: ['LITERS', 'MILLILITERS', 'GALLONS'],
+    temperature: ['CELSIUS', 'FAHRENHEIT', 'KELVIN']
   };
 
   operationMap: Record<QuantityType, OperationType[]> = {
@@ -60,275 +47,142 @@ export class HomeComponent {
     temperature: ['convert', 'compare']
   };
 
-   constructor(
-     private router: Router,
-     private auth: AuthService,
-     private quantityService: QuantityService
-   ) {
-    this.resetUnitsForType();
-    this.calculate();
-   }
+  // ✅ FIX 2: NgZone inject kiya — change detection guarantee ke liye
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+    private quantityService: QuantityService,
+    private zone: NgZone,
+    private cd: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    this.userName = this.auth.getUser();
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login']);
+    }
+  }
 
   selectType(type: QuantityType): void {
     this.selectedType = type;
-    const allowedOperations = this.operationMap[type];
-    if (!allowedOperations.includes(this.selectedOperation)) {
+    const allowedOps = this.operationMap[type];
+    if (!allowedOps.includes(this.selectedOperation)) {
       this.selectedOperation = 'convert';
     }
     this.resetUnitsForType();
-    this.calculate();
+    this.resultText = '';
   }
 
   selectOperation(operation: OperationType): void {
     this.selectedOperation = operation;
-    this.calculate();
+    this.resultText = '';
   }
 
-  onInputChange(): void {
-    this.calculate();
-  }
-
+  // ✅ FIX 1: defaults ab unitMap se exactly match karte hain
   resetUnitsForType(): void {
-    if (this.selectedType === 'length') {
-      this.firstUnit = 'metres';
-      this.secondUnit = 'centimetres';
-      this.firstValue = 1;
-      this.secondValue = 0;
-    } else if (this.selectedType === 'weight') {
-      this.firstUnit = 'kilograms';
-      this.secondUnit = 'grams';
-      this.firstValue = 1;
-      this.secondValue = 0;
-    } else if (this.selectedType === 'volume') {
-      this.firstUnit = 'litres';
-      this.secondUnit = 'millilitres';
-      this.firstValue = 1;
-      this.secondValue = 0;
-    } else {
-      this.firstUnit = 'celsius';
-      this.secondUnit = 'fahrenheit';
-      this.firstValue = 0;
-      this.secondValue = 0;
-    }
+    const defaults: Record<QuantityType, { from: string; to: string }> = {
+      length:      { from: 'METERS',  to: 'CENTIMETERS' },
+      weight:      { from: 'KILOGRAMS', to: 'GRAMS'     },
+      volume:      { from: 'LITERS',  to: 'MILLILITERS' },
+      temperature: { from: 'CELSIUS', to: 'FAHRENHEIT'  }
+    };
+    this.firstUnit  = defaults[this.selectedType].from;
+    this.secondUnit = defaults[this.selectedType].to;
+    this.firstValue  = 1;
+    this.secondValue = 1;
   }
 
-  calculate(): void {
-    if (this.selectedOperation === 'convert') {
-      const converted = this.convertValue(
-        this.selectedType,
-        this.firstValue,
-        this.firstUnit,
-        this.secondUnit
-      );
-      this.secondValue = this.roundValue(converted);
-      this.resultText = `${this.firstValue} ${this.formatUnit(this.firstUnit)} = ${this.secondValue} ${this.formatUnit(this.secondUnit)}`;
-      return;
-    }
-
-    if (this.selectedOperation === 'compare') {
-      const firstComparable =
-        this.selectedType === 'temperature'
-          ? this.convertTemperature(this.firstValue, this.firstUnit, 'celsius')
-          : this.toBaseUnit(this.selectedType, this.firstValue, this.firstUnit);
-
-      const secondComparable =
-        this.selectedType === 'temperature'
-          ? this.convertTemperature(this.secondValue, this.secondUnit, 'celsius')
-          : this.toBaseUnit(this.selectedType, this.secondValue, this.secondUnit);
-
-      if (firstComparable > secondComparable) {
-        this.resultText = `${this.firstValue} ${this.formatUnit(this.firstUnit)} is greater than ${this.secondValue} ${this.formatUnit(this.secondUnit)}`;
-      } else if (firstComparable < secondComparable) {
-        this.resultText = `${this.firstValue} ${this.formatUnit(this.firstUnit)} is smaller than ${this.secondValue} ${this.formatUnit(this.secondUnit)}`;
-      } else {
-        this.resultText = `${this.firstValue} ${this.formatUnit(this.firstUnit)} is equal to ${this.secondValue} ${this.formatUnit(this.secondUnit)}`;
-      }
-      return;
-    }
-
-    const firstBase = this.toBaseUnit(this.selectedType, this.firstValue, this.firstUnit);
-    const secondBase = this.toBaseUnit(this.selectedType, this.secondValue, this.secondUnit);
-
-    let resultBase = 0;
-
-    switch (this.selectedOperation) {
-      case 'add':
-        resultBase = firstBase + secondBase;
-        break;
-      case 'subtract':
-        resultBase = firstBase - secondBase;
-        break;
-      case 'multiply':
-        resultBase = firstBase * secondBase;
-        break;
-      case 'divide':
-        if (secondBase === 0) {
-          this.resultText = 'Cannot divide by zero';
-          return;
-        }
-        resultBase = firstBase / secondBase;
-        break;
-    }
-
-    const convertedResult = this.fromBaseUnit(this.selectedType, resultBase, this.firstUnit);
-    this.resultText = `Result: ${this.roundValue(convertedResult)} ${this.formatUnit(this.firstUnit)}`;
+  get isConvertMode(): boolean {
+    return this.selectedOperation === 'convert';
   }
 
   performAction(): void {
-
     if (!this.auth.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
     }
 
-    const requestBody = this.buildRequestBody();
+    this.isLoading = true;
+    this.resultText = '';
+
+    const typeMap: Record<QuantityType, string> = {
+      length:      'LengthUnit',
+      weight:      'WeightUnit',
+      volume:      'VolumeUnit',
+      temperature: 'TemperatureUnit'
+    };
+
+    const requestBody = {
+      thisQuantityDTO: {
+        value: this.firstValue,
+        unit: this.firstUnit,                          // already UPPERCASE hai
+        measurementType: typeMap[this.selectedType]
+      },
+      thatQuantityDTO: {
+        value: this.isConvertMode ? 0 : this.secondValue,
+        unit: this.secondUnit,                         // already UPPERCASE hai
+        measurementType: typeMap[this.selectedType]
+      }
+    };
 
     const apiUrl = this.quantityService.getApiByOperation(this.selectedOperation);
 
-    this.quantityService.postData(apiUrl, requestBody)
-      .subscribe((res: any) => {
+    this.quantityService.postData(apiUrl, requestBody).subscribe({
+      next: (res: any) => {
+        // ✅ FIX 2: NgZone.run() — UI update Angular zone ke andar force hoga
+        this.zone.run(() => {
+          this.isLoading = false;
 
-      if (this.selectedOperation === 'compare') {
-        this.resultText = res.resultString;
-      } else {
-        this.resultText = `${res.resultValue} ${res.resultUnit}`;
+          if (this.selectedOperation === 'compare') {
+            this.resultText = res.resultString ?? 'No result';
+          } else {
+            this.resultText = `${res.resultValue} ${this.formatUnit(res.resultUnit || this.secondUnit)}`;
+          }
+
+          this.saveToHistory();
+          this.cd.detectChanges(); 
+        });
+      },
+      error: (err: any) => {
+        this.zone.run(() => {
+          this.isLoading = false;
+          console.error(err);
+          this.resultText = 'Error: Backend se response nahi aaya. Please try again.';
+        });
       }
-
-      this.saveToHistory();
     });
   }
 
-  saveToHistory(): void {
-    const existingHistory = localStorage.getItem('quantity-history');
-    const history: HistoryItem[] = existingHistory ? JSON.parse(existingHistory) : [];
+  private getHistoryKey(): string {
+    const user = this.auth.getUser() || 'guest';
+    return `quantity-history-${user}`;
+  }
 
-    const newItem: HistoryItem = {
+  saveToHistory(): void {
+    const key = this.getHistoryKey();
+    const existing = localStorage.getItem(key);
+    const history = existing ? JSON.parse(existing) : [];
+
+    history.unshift({
       id: Date.now(),
       type: this.selectedType,
       operation: this.selectedOperation,
       firstValue: this.firstValue,
       firstUnit: this.firstUnit,
-      secondValue: this.secondValue,
+      secondValue: this.isConvertMode ? null : this.secondValue,
       secondUnit: this.secondUnit,
       resultText: this.resultText,
       createdAt: new Date().toLocaleString()
-    };
+    });
 
-    history.unshift(newItem);
-    localStorage.setItem('quantity-history', JSON.stringify(history));
-  }
-
-  convertValue(type: QuantityType, value: number, from: string, to: string): number {
-    if (type === 'temperature') {
-      return this.convertTemperature(value, from, to);
-    }
-    const baseValue = this.toBaseUnit(type, value, from);
-    return this.fromBaseUnit(type, baseValue, to);
-  }
-
-  toBaseUnit(type: QuantityType, value: number, unit: string): number {
-    if (type === 'length') {
-      const factors: Record<string, number> = {
-        millimetres: 0.001,
-        centimetres: 0.01,
-        metres: 1,
-        kilometres: 1000,
-        inches: 0.0254,
-        feet: 0.3048,
-        yards: 0.9144
-      };
-      return value * factors[unit];
-    }
-
-    if (type === 'weight') {
-      const factors: Record<string, number> = {
-        milligrams: 0.001,
-        grams: 1,
-        kilograms: 1000,
-        pounds: 453.592
-      };
-      return value * factors[unit];
-    }
-
-    if (type === 'volume') {
-      const factors: Record<string, number> = {
-        millilitres: 0.001,
-        litres: 1,
-        gallons: 3.78541
-      };
-      return value * factors[unit];
-    }
-
-    return value;
-  }
-
-  fromBaseUnit(type: QuantityType, value: number, unit: string): number {
-    if (type === 'length') {
-      const factors: Record<string, number> = {
-        millimetres: 0.001,
-        centimetres: 0.01,
-        metres: 1,
-        kilometres: 1000,
-        inches: 0.0254,
-        feet: 0.3048,
-        yards: 0.9144
-      };
-      return value / factors[unit];
-    }
-
-    if (type === 'weight') {
-      const factors: Record<string, number> = {
-        milligrams: 0.001,
-        grams: 1,
-        kilograms: 1000,
-        pounds: 453.592
-      };
-      return value / factors[unit];
-    }
-
-    if (type === 'volume') {
-      const factors: Record<string, number> = {
-        millilitres: 0.001,
-        litres: 1,
-        gallons: 3.78541
-      };
-      return value / factors[unit];
-    }
-
-    return value;
-  }
-
-  convertTemperature(value: number, from: string, to: string): number {
-    let celsius = value;
-
-    if (from === 'fahrenheit') {
-      celsius = (value - 32) * 5 / 9;
-    } else if (from === 'kelvin') {
-      celsius = value - 273.15;
-    }
-
-    if (to === 'celsius') return celsius;
-    if (to === 'fahrenheit') return (celsius * 9 / 5) + 32;
-    if (to === 'kelvin') return celsius + 273.15;
-
-    return value;
-  }
-
-  formatUnit(unit: string): string {
-    return unit.charAt(0).toUpperCase() + unit.slice(1);
-  }
-
-  roundValue(value: number): number {
-    return Number(value.toFixed(4));
+    localStorage.setItem(key, JSON.stringify(history));
   }
 
   goToHistory(): void {
-
     if (!this.auth.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
     }
-
     this.router.navigate(['/history']);
   }
 
@@ -336,25 +190,8 @@ export class HomeComponent {
     this.auth.logout();
     this.router.navigate(['/login']);
   }
-  buildRequestBody() {
-    const typeMap: any = {
-      length: 'LengthUnit',
-      weight: 'WeightUnit',
-      volume: 'VolumeUnit',
-      temperature: 'TemperatureUnit'
-    };
 
-    return {
-      thisQuantityDTO: {
-        value: this.firstValue,
-        unit: this.firstUnit.toUpperCase(),
-        measurementType: typeMap[this.selectedType]
-      },
-      thatQuantityDTO: {
-        value: this.secondValue,
-        unit: this.secondUnit.toUpperCase(),
-        measurementType: typeMap[this.selectedType]
-      }
-    };
+  formatUnit(unit: string): string {
+    return unit ? unit.charAt(0).toUpperCase() + unit.slice(1).toLowerCase() : '';
   }
 }
