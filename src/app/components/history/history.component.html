@@ -1,0 +1,96 @@
+<div class="history-page">
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="grid-overlay"></div>
+
+  <header class="topbar">
+    <div class="brand-section">
+      <div class="brand-logo">Q</div>
+      <div>
+        <h2>Quanment</h2>
+        <p>Quantity Measurement App</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="ghost-btn" (click)="goBack()">Back</button>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="history-content">
+    <section class="history-hero">
+      <div>
+        <p class="hero-badge">ACTIVITY LOG</p>
+        <h1>Conversion History</h1>
+        <p class="hero-subtitle">
+          View all saved calculations and filter them by measurement type or operation.
+        </p>
+      </div>
+    </section>
+
+    <section class="history-panel">
+      <div class="filter-row">
+        <div class="filter-card">
+          <label>Show</label>
+          <select [(ngModel)]="typeFilter" (change)="applyFilters()">
+            <option value="all">All Measurement Types</option>
+            <option value="length">Length</option>
+            <option value="weight">Weight</option>
+            <option value="volume">Volume</option>
+            <option value="temperature">Temperature</option>
+          </select>
+        </div>
+
+        <div class="filter-card">
+          <label>Operation</label>
+          <select [(ngModel)]="operationFilter" (change)="applyFilters()">
+            <option value="all">All Operations</option>
+            <option value="convert">Convert</option>
+            <option value="compare">Compare</option>
+            <option value="add">Add</option>
+            <option value="subtract">Subtract</option>
+            <option value="multiply">Multiply</option>
+            <option value="divide">Divide</option>
+          </select>
+        </div>
+
+        <div class="filter-card action-card">
+          <label>Manage</label>
+          <button class="clear-btn" (click)="clearHistory()">Clear History</button>
+        </div>
+      </div>
+
+      <div class="history-list" *ngIf="filteredHistory.length > 0; else emptyState">
+        <div class="history-item" *ngFor="let item of filteredHistory">
+          <div class="history-top">
+            <div class="tag-row">
+              <span class="tag">{{ item.type | titlecase }}</span>
+              <span class="tag secondary">{{ item.operation | titlecase }}</span>
+            </div>
+            <span class="time">{{ item.createdAt }}</span>
+          </div>
+
+          <div class="history-body">
+            <p>
+              <strong>From:</strong>
+              {{ item.firstValue }} {{ item.firstUnit | titlecase }}
+            </p>
+            <p>
+              <strong>To / With:</strong>
+              {{ item.secondValue }} {{ item.secondUnit | titlecase }}
+            </p>
+            <h3>{{ item.resultText }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #emptyState>
+        <div class="empty-box">
+          <h3>No history found</h3>
+          <p>Try performing some calculations or change the filters.</p>
+        </div>
+      </ng-template>
+    </section>
+  </main>
+</div>
