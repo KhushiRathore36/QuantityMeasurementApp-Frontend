@@ -7,8 +7,9 @@ import { Observable } from 'rxjs';
 })
 export class AuthService {
 
-  private baseUrl = 'http://localhost:8080/auth';
+  // private baseUrl = 'http://localhost:8080/auth';
 
+  private baseUrl = 'https://laudable-youthfulness-production-a722.up.railway.app/auth';
   constructor(private http: HttpClient) {}
 
   signup(data: any): Observable<any> {
